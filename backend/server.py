@@ -166,6 +166,11 @@ def parse_from_mongo(item):
             item['applied_date'] = datetime.fromisoformat(item['applied_date'])
     return item
 
+# Root endpoint
+@api_router.get("/")
+async def root():
+    return {"message": "JobSeeker AI Tracker API", "status": "running"}
+
 # Authentication endpoints
 @api_router.get("/auth/google")
 async def login_google(request: Request):
