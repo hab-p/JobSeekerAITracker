@@ -203,11 +203,12 @@ async def auth_callback(request: Request):
             'expires_at': datetime.now(timezone.utc) + timedelta(days=7)
         }
         
-        return {
-            'user': user.dict(),
-            'session_token': session_token,
-            'message': 'Authentication successful'
-        }
+        # Redirect to frontend with session token
+        frontend_url = os.environ.get('FRONTEND_URL', 'https://applysmart-hub.preview.emergentagent.com')
+        redirect_url = f"{frontend_url}?session_token={session_token}"
+        
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=redirect_url)
     
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Authentication failed: {str(e)}")
