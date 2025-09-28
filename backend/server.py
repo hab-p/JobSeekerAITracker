@@ -179,17 +179,20 @@ async def root():
 @api_router.get("/auth/google")
 async def login_google(request: Request):
     redirect_uri = "https://applysmart-hub.preview.emergentagent.com/api/auth/callback"
-    auth_url = await oauth.google.authorize_redirect(request, redirect_uri)
     
-    # Get the actual redirect URL
+    # Generate state token for security
+    import secrets
+    state = secrets.token_urlsafe(32)
+    request.session['oauth_state'] = state
+    
+    # Build Google OAuth URL
     from urllib.parse import urlencode
     params = {
         'response_type': 'code',
         'client_id': os.environ.get('GOOGLE_CLIENT_ID'),
         'redirect_uri': redirect_uri,
         'scope': 'openid email profile',
-        'state': request.session.get('_state_google_' + request.session.get('_csrf_token', ''), ''),
-        'nonce': 'F5t1FVVFyThUWWSnYrXg'
+        'state': state
     }
     google_auth_url = 'https://accounts.google.com/o/oauth2/v2/auth?' + urlencode(params)
     
