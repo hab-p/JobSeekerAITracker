@@ -178,7 +178,7 @@ async def root():
 # Authentication endpoints
 @api_router.get("/auth/google")
 async def login_google(request: Request):
-    redirect_uri = request.url_for('auth_callback')
+    redirect_uri = "https://applysmart-hub.preview.emergentagent.com/api/auth/callback"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @api_router.get("/auth/callback")
