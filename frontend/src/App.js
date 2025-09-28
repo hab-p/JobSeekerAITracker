@@ -33,6 +33,7 @@ const AuthProvider = ({ children }) => {
   }, [sessionToken]);
 
   const login = () => {
+    console.log('Login clicked, redirecting to:', `${API}/auth/google`);
     window.location.href = `${API}/auth/google`;
   };
 
