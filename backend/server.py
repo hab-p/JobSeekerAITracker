@@ -179,7 +179,39 @@ async def root():
 @api_router.get("/auth/google")
 async def login_google(request: Request):
     redirect_uri = "https://applysmart-hub.preview.emergentagent.com/api/auth/callback"
-    return await oauth.google.authorize_redirect(request, redirect_uri)
+    auth_url = await oauth.google.authorize_redirect(request, redirect_uri)
+    
+    # Get the actual redirect URL
+    from urllib.parse import urlencode
+    params = {
+        'response_type': 'code',
+        'client_id': os.environ.get('GOOGLE_CLIENT_ID'),
+        'redirect_uri': redirect_uri,
+        'scope': 'openid email profile',
+        'state': request.session.get('_state_google_' + request.session.get('_csrf_token', ''), ''),
+        'nonce': 'F5t1FVVFyThUWWSnYrXg'
+    }
+    google_auth_url = 'https://accounts.google.com/o/oauth2/v2/auth?' + urlencode(params)
+    
+    # Return HTML page with JavaScript redirect
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Redirecting to Google...</title>
+        <meta http-equiv="refresh" content="0;url={google_auth_url}">
+    </head>
+    <body>
+        <p>Redirecting to Google OAuth...</p>
+        <script>
+            window.location.href = "{google_auth_url}";
+        </script>
+    </body>
+    </html>
+    """
+    
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(content=html_content, status_code=200)
 
 @api_router.get("/auth/callback")
 async def auth_callback(request: Request):
