@@ -217,13 +217,36 @@ async def login_google(request: Request):
     return HTMLResponse(content=html_content, status_code=200)
 
 @api_router.get("/auth/callback")
-async def auth_callback(request: Request):
+async def auth_callback(request: Request, code: str, state: str):
     try:
-        token = await oauth.google.authorize_access_token(request)
-        user_info = token.get('userinfo')
+        # Verify state parameter
+        if request.session.get('oauth_state') != state:
+            raise HTTPException(status_code=400, detail="Invalid state parameter")
         
-        if not user_info:
-            raise HTTPException(status_code=400, detail="Failed to get user info")
+        # Exchange code for tokens
+        import httpx
+        token_url = 'https://oauth2.googleapis.com/token'
+        token_data = {
+            'client_id': os.environ.get('GOOGLE_CLIENT_ID'),
+            'client_secret': os.environ.get('GOOGLE_CLIENT_SECRET'),
+            'code': code,
+            'grant_type': 'authorization_code',
+            'redirect_uri': 'https://applysmart-hub.preview.emergentagent.com/api/auth/callback'
+        }
+        
+        async with httpx.AsyncClient() as client:
+            token_response = await client.post(token_url, data=token_data)
+            token_response.raise_for_status()
+            tokens = token_response.json()
+        
+        # Get user info
+        userinfo_url = 'https://openidconnect.googleapis.com/v1/userinfo'
+        headers = {'Authorization': f"Bearer {tokens['access_token']}"}
+        
+        async with httpx.AsyncClient() as client:
+            user_response = await client.get(userinfo_url, headers=headers)
+            user_response.raise_for_status()
+            user_info = user_response.json()
         
         # Check if user exists
         existing_user = await db.users.find_one({'email': user_info['email']})
